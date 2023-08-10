@@ -1,0 +1,124 @@
+---
+name: Project PR automation
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    inputs:
+      project-id:
+        required: true
+        type: number
+    secrets:
+      token:
+
+concurrency:
+  group: project-pr-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  repository-projects: write
+  issues: write
+  statuses: write
+
+jobs:
+  add-to-project:
+    name: Add pull request to project
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    steps:
+      - uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: >
+            https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
+          github-token: ${{ secrets.token }}
+  get-reviews:
+    runs-on: ubuntu-latest
+    name: Get reviews
+    outputs:
+      pending: ${{ steps.reviews.outputs.pending }}
+      approved: ${{ steps.reviews.outputs.approved }}
+      changes-requested: ${{ steps.reviews.outputs.changes_requested }}
+    steps:
+      - id: reviews
+        uses: jrylan/github-action-reviews-counter@main
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+  get-linked-issues:
+    runs-on: ubuntu-latest
+    name: Get linked issues
+    outputs:
+      issues: ${{ steps.linked-issues.outputs.issues }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get Linked Issues Action
+        id: linked-issues
+        uses: kin/gh-action-get-linked-issues@v2.0
+        with:
+          access-token: ${{ secrets.token }}
+      - run: echo ${{ steps.linked-issues.outputs.issues }}
+  move-tasks-to-todo:
+    runs-on: ubuntu-latest
+    if: >
+      (
+       fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
+       github.event_name == 'pull_request_review' &&
+       github.event.review.state == 'CHANGES_REQUESTED')
+    needs:
+      - get-linked-issues
+    name: Move cards to "Todo"
+    strategy:
+      matrix:
+        data: ${{fromJson(needs.get-linked-issues.outputs.issues)}}
+    steps:
+      - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.token }}
+          organization: ${{ github.repository_owner }}
+          project_id: ${{ inputs.project-id }}
+          resource_node_id: ${{ matrix.data.issue.node_id }}
+          status_value: Todo
+  move-tasks-in-progress:
+    runs-on: ubuntu-latest
+    if: >
+      fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
+      (github.event.pull_request.draft ||
+       (github.event_name == 'pull_request' &&
+        needs.get-reviews.outputs.changes-requested > 0))
+    needs:
+      - get-linked-issues
+      - get-reviews
+    name: Move cards to "In Progress"
+    strategy:
+      matrix:
+        data: ${{fromJson(needs.get-linked-issues.outputs.issues)}}
+    steps:
+      - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.token }}
+          organization: ${{ github.repository_owner }}
+          project_id: ${{ inputs.project-id }}
+          resource_node_id: ${{ matrix.data.issue.node_id }}
+          status_value: In Progress
+  move-tasks-to-review:
+    runs-on: ubuntu-latest
+    if: >
+      fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
+      !github.event.pull_request.draft &&
+      github.event_name == 'pull_request' &&
+      needs.get-reviews.outputs.changes-requested == 0
+    needs:
+      - get-linked-issues
+      - get-reviews
+    name: Move cards to "Review"
+    strategy:
+      matrix:
+        data: ${{fromJson(needs.get-linked-issues.outputs.issues)}}
+    steps:
+      - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.token }}
+          organization: ${{ github.repository_owner }}
+          project_id: ${{ inputs.project-id }}
+          resource_node_id: ${{ matrix.data.issue.node_id }}
+          status_value: Review
