@@ -1,0 +1,50 @@
+---
+default_stages:
+  - commit
+
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-docstring-first
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-json
+      - id: pretty-format-json
+        args:
+          - --autofix
+      - id: check-xml
+      - id: check-added-large-files
+        args:
+          - --maxkb=1024
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 3.0.0
+    hooks:
+      - id: shellcheck
+      - id: shfmt
+        args:
+          - -i
+          - '2'
+  - repo: https://github.com/lyz-code/yamlfix/
+    rev: 1.13.0
+    hooks:
+      - id: yamlfix
+        entry: >
+          env YAMLFIX_SEQUENCE_STYLE="block_style"
+          YAMLFIX_LINE_LENGTH=100
+          YAMLFIX_SECTION_WHITELINES=1
+          YAMLFIX_quote_representation="\""
+          yamlfix
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.32.0
+    hooks:
+      - id: yamllint
+        args:
+          - -d
+          - '{extends: default, rules: {line-length: {max: 100}}}'
