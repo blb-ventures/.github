@@ -1,0 +1,62 @@
+---
+name: Project issue automation
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    inputs:
+      project-id:
+        required: true
+        type: number
+    secrets:
+      token:
+
+concurrency:
+  group: project-issue-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  repository-projects: write
+  issues: write
+  statuses: write
+
+jobs:
+  add-sentry-label:
+    if: >
+      github.event.issue.performed_via_github_app != null &&
+      (contains(github.event.issue.performed_via_github_app.name, 'sentry') ||
+       contains(github.event.issue.performed_via_github_app.name, 'Sentry'))
+    name: Add sentry label
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: |
+            kind/bug
+            kind/sentry
+  add-area-labels:
+    name: Add area label
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        area:
+          - area/app
+          - area/frontend
+          - area/backend
+          - area/devops
+          - area/design
+    steps:
+      - uses: actions-ecosystem/action-add-labels@v1.1.0
+        if: contains(github.event.body, matrix.area)
+        with:
+          labels: ${{ matrix.area }}
+  add-to-project:
+    name: Add issue to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: >
+            https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
+          github-token: ${{ secrets.token }}

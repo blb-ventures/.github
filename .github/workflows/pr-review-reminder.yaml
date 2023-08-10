@@ -4,6 +4,9 @@ name: PR review reminder
 # yamllint disable-line rule:truthy
 on:
   workflow_call:
+    secrets:
+      token:
+        required: true
 
 jobs:
   pull-request-review-reminder:
@@ -13,7 +16,7 @@ jobs:
     steps:
       - uses: tommykw/pull-request-reviewer-reminder-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.token }}
           # yamllint disable-line rule:line-length
           reminder_message: Para cada dia que esta PR não é revisada, um gatinho é brutalmente assasinado.
             Não deixe gatinhos morrer em vão 😭, revise a PR! 🐱
