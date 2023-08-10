@@ -1,0 +1,47 @@
+---
+name: PR tasks
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  assignee:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    if: github.event.action == 'opened' || github.event.action == 'ready_for_review'
+    steps:
+      - uses: hkusu/review-assign-action@v1
+        with:
+          assignees: ${{ github.actor }}
+          github-token: ${{ secrets.token }}
+  triage:
+    name: Triage Labels
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v4
+        with:
+          repo-token: ${{ secrets.token }}
+  conventional-commits:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - uses: beemojs/conventional-pr-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+        with:
+          config-preset: angular
