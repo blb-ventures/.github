@@ -1,0 +1,28 @@
+---
+name: Update pre-commit hooks
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+
+jobs:
+  update-pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: |
+          pipx install pre-commit
+          pre-commit autoupdate
+      - run: |
+          if [[ $(git status --porcelain | wc -l) -gt 0 ]]; then
+            pre-commit run --all-files || true
+          fi
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: update/pre-commit-hooks
+          commit-message: 'chore(pre-commit): update pre-commit hooks'
+          title: 'chore(pre-commit): update pre-commit hooks'

@@ -6,7 +6,7 @@ on:
   workflow_call:
 
 jobs:
-  pull-request-reviewer-reminder:
+  pull-request-review-reminder:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
