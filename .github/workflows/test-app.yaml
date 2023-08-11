@@ -1,0 +1,57 @@
+---
+name: Test app
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: frontend
+      node-version:
+        type: number
+        default: 20
+      core-lint:
+        type: boolean
+        default: true
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: setup-node
+        name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: yarn
+          cache-dependency-path: '**/yarn.lock'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+      - name: Yarn cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir-path.outputs.dir }}
+            "**/node_modules"
+          # yamllint disable-line rule:line-length
+          key: node-modules-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-${{ hashFiles('**/yarn.lock')
+            }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-
+            node-modules-${{ runner.os }}-
+      - name: Yarn install
+        run: yarn install --immutable
+      - name: App lint
+        run: yarn app-lint

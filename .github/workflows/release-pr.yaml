@@ -19,9 +19,15 @@ on:
       back-image:
         type: string
         required: true
-      front-image:
+      back-context:
+        type: string
+        default: backend
+      web-image:
         type: string
         required: true
+      web-context:
+        type: string
+        default: frontend
       argocd-app:
         type: string
     secrets:
@@ -98,7 +104,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: backend
+          context: ${{ inputs.back-context }}
           pull: true
           push: true
           build-args: |
@@ -110,8 +116,8 @@ jobs:
           cache-from: >
             type=registry,ref=${{ inputs.docker-registry }}/${{ inputs.back-image }}:latest
           cache-to: type=inline
-  build-front:
-    name: Build front
+  build-web:
+    name: Build web
     runs-on: ubuntu-latest
     needs:
       - get-version
@@ -135,15 +141,15 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: frontend
+          context: ${{ inputs.web-context }}
           pull: true
           push: true
           build-args: |
             SENTRY_RELEASE=${{ env.RELEASE_NAME }}
             SENTRY_TOKEN=${{ secrets.sentry-token }}
           tags: |
-            ${{ inputs.docker-registry }}/${{ inputs.front-image }}:${{ env.RELEASE_NAME }}
-            ${{ inputs.docker-registry }}/${{ inputs.front-image }}:latest
+            ${{ inputs.docker-registry }}/${{ inputs.web-image }}:${{ env.RELEASE_NAME }}
+            ${{ inputs.docker-registry }}/${{ inputs.web-image }}:latest
           # FIXME: Use registry cache when we can
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -152,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-back
-      - build-front
+      - build-web
     if: ${{ !!inputs.argocd-app }}
     env:
       ARGOCD_SERVER: ${{ secrets.argocd-server }}
@@ -166,14 +172,14 @@ jobs:
         env:
           DOCKER_REGISTRY: ${{ inputs.docker-registry }}
           BACK_IMAGE: ${{ inputs.back-image }}
-          FRONT_IMAGE: ${{ inputs.front-image }}
+          WEB_IMAGE: ${{ inputs.web-image }}
           ARGOCD_APP: ${{ inputs.argocd-app }}
         run: >
           ./argocd app set "${ARGOCD_APP}"
           --kustomize-image
           "${DOCKER_REGISTRY}/${BACK_IMAGE}@${{ needs.build-back.outputs.digest }}"
           --kustomize-image
-          "${DOCKER_REGISTRY}/${FRONT_IMAGE}@${{ needs.build-front.outputs.digest }}"
+          "${DOCKER_REGISTRY}/${WEB_IMAGE}@${{ needs.build-web.outputs.digest }}"
   update-deployment:
     name: Update Deployment
     runs-on: ubuntu-latest

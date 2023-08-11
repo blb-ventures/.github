@@ -1,0 +1,90 @@
+---
+name: Test back
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: backend
+      python-version:
+        type: string
+        default: '3.11'
+      pytest-extra-args:
+        type: string
+        default: --cov=api
+      need-geolibs:
+        type: boolean
+        default: false
+
+concurrency:
+  # yamllint disable-line rule:line-length
+  group: tests-${{ github.workflow }}-${{ inputs.working-directory }}-${{ github.head_ref || github.run_id
+    }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Backend
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./${{ inputs.working-directory }}
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install system deps
+        if: ${{ inputs.need-geolibs }}
+        run: sudo apt-get install gdal-bin libsqlite3-mod-spatialite
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install poetry
+        run: |
+          pipx install poetry
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
+      - name: Load cached venv
+        uses: actions/cache@v3
+        with:
+          path: ${{ inputs.working-directory }}/.venv
+          # yamllint disable-line rule:line-length
+          key: back-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock')
+            }}
+          restore-keys: |
+            back-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+            back-venv-${{ runner.os }}-
+      - name: Install dependencies
+        run: poetry install
+      - name: Check for ruff errors
+        run: poetry run ruff .
+      - name: Check for black errors
+        run: poetry run black . --check
+      - name: Check for pyright errors
+        uses: jakebailey/pyright-action@v1
+        with:
+          working-directory: ${{ inputs.working-directory }}
+      - name: Run Tests
+        env:
+          PYTEST_ARGS: ${{ inputs.pytest-extra-args }}
+        # yamllint disable-line rule:line-length
+        run: poetry run pytest --junitxml=pytest.xml "${PYTEST_ARGS}" . | tee pytest-coverage.txt
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        if: ${{ github.actor != 'dependabot[bot]' }}
+        continue-on-error: true
+        with:
+          title: Backend coverage
+          pytest-coverage-path: ./${{ inputs.working-directory }}/pytest-coverage.txt
+          junitxml-path: ./${{ inputs.working-directory }}/pytest.xml
+          report-only-changed-files: true
