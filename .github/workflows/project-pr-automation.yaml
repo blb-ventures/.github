@@ -22,7 +22,7 @@ jobs:
       repository-projects: write
       issues: write
       statuses: write
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/add-to-project@v0.5.0
         with:
@@ -70,6 +70,7 @@ jobs:
       }}
     needs:
       - get-linked-issues
+      - add-to-project
     permissions:
       contents: read
       repository-projects: write
@@ -99,6 +100,7 @@ jobs:
     needs:
       - get-linked-issues
       - get-reviews
+      - add-to-project
     permissions:
       contents: read
       repository-projects: write
@@ -133,6 +135,7 @@ jobs:
     needs:
       - get-linked-issues
       - get-reviews
+      - add-to-project
     name: Move cards to "Review"
     strategy:
       matrix:
