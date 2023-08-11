@@ -10,6 +10,7 @@ on:
         type: number
     secrets:
       token:
+        required: true
 
 concurrency:
   group: project-pr-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -43,7 +44,7 @@ jobs:
       - id: reviews
         uses: jrylan/github-action-reviews-counter@main
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.token }}
   get-linked-issues:
     runs-on: ubuntu-latest
     name: Get linked issues
