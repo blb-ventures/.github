@@ -1,0 +1,89 @@
+---
+name: Release
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        type: string
+        required: true
+      package-release-type:
+        type: string
+        default: simple
+      package-extra-files:
+        type: string
+        default: ''
+      deployment-url:
+        type: string
+        required: true
+      deployment-environment:
+        type: string
+        required: true
+      deployment-projects:
+        type: string
+    secrets:
+      token:
+        required: true
+      sentry-url:
+        required: true
+      sentry-org:
+        required: true
+      sentry-token:
+        required: true
+
+concurrency:
+  group: release
+
+permissions:
+  contents: write
+  pull-requests: write
+  deployments: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          token: ${{ secrets.token }}
+          release-type: ${{ inputs.package-release-type}}
+          package-name: ${{ inputs.package-name }}
+          extra-files: ${{ inputs.package-extra-files }}
+          changelog-types: >
+            [{"type":"feat","section":"Features","hidden":false},
+             {"type":"BREAKING CHANGE","section":"Breaking Changes","hidden":false},
+             {"type":"fix","section":"Bug Fixes","hidden":false},
+             {"type":"perf","section":"Performance","hidden":false},
+             {"type":"deps","section":"Dependencies","hidden":false},
+             {"type":"revert","section":"Reverts","hidden":false},
+             {"type":"docs","section":"Documentation","hidden":false},
+             {"type":"style","section":"Styles","hidden":false},
+             {"type":"refactor","section":"Code Refactoring","hidden":false},
+             {"type":"test","section":"Tests","hidden":false},
+             {"type":"build","section":"Build System","hidden":false},
+             {"type":"ci","section":"Continuous Integration","hidden":false},
+             {"type":"chore","section":"Miscellaneous","hidden":false}]
+      - uses: chrnorm/deployment-action@releases/v2
+        name: Create GitHub deployment
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          token: ${{ secrets.token }}
+          environment-url: ${{ inputs.deployment-url }}
+          ref: ${{ github.sha }}
+          initial-status: success
+          environment: ${{ inputs.deployment-environment }}
+      - uses: actions/checkout@v3
+      - name: Create sentry release
+        if: ${{ steps.release.outputs.release_created }}
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_URL: ${{ secrets.sentry-url }}
+          SENTRY_ORG: ${{ secrets.sentry-org }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.sentry-token }}
+        with:
+          environment: ${{ inputs.deployment-environment }}
+          version: ${{ steps.release.outputs.tag_name }}
+          projects: ${{ inputs.deployment-projects }}

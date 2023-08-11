@@ -25,7 +25,7 @@ jobs:
   add-to-project:
     name: Add pull request to project
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
     steps:
       - uses: actions/add-to-project@v0.5.0
         with:
@@ -60,10 +60,11 @@ jobs:
   move-tasks-to-todo:
     runs-on: ubuntu-latest
     if: >
-      (
-       fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
-       github.event_name == 'pull_request_review' &&
-       github.event.review.state == 'CHANGES_REQUESTED')
+      ${{
+        fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
+        github.event_name == 'pull_request_review' &&
+        github.event.review.state == 'CHANGES_REQUESTED'
+      }}
     needs:
       - get-linked-issues
     name: Move cards to "Todo"
@@ -81,10 +82,12 @@ jobs:
   move-tasks-in-progress:
     runs-on: ubuntu-latest
     if: >
-      fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
-      (github.event.pull_request.draft ||
-       (github.event_name == 'pull_request' &&
-        needs.get-reviews.outputs.changes-requested > 0))
+      ${{
+        fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
+        (github.event.pull_request.draft ||
+         (github.event_name == 'pull_request' &&
+          needs.get-reviews.outputs.changes-requested > 0))
+      }}
     needs:
       - get-linked-issues
       - get-reviews
@@ -103,10 +106,12 @@ jobs:
   move-tasks-to-review:
     runs-on: ubuntu-latest
     if: >
-      fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
-      !github.event.pull_request.draft &&
-      github.event_name == 'pull_request' &&
-      needs.get-reviews.outputs.changes-requested == 0
+      ${{
+        fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
+        !github.event.pull_request.draft &&
+        github.event_name == 'pull_request' &&
+        needs.get-reviews.outputs.changes-requested == 0
+      }}
     needs:
       - get-linked-issues
       - get-reviews

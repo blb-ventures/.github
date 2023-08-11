@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    if: github.event.action == 'opened' || github.event.action == 'ready_for_review'
+    if: ${{ github.event.action == 'opened' || github.event.action == 'ready_for_review' }}
     steps:
       - uses: hkusu/review-assign-action@v1
         with:
