@@ -1,5 +1,5 @@
 ---
-name: Project issue automation
+name: Project Issue
 
 # yamllint disable-line rule:truthy
 on:
@@ -8,8 +8,6 @@ on:
       project-id:
         required: true
         type: number
-    secrets:
-      token:
 
 concurrency:
   group: project-issue-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -29,7 +27,7 @@ jobs:
         (contains(github.event.issue.performed_via_github_app.name, 'sentry') ||
          contains(github.event.issue.performed_via_github_app.name, 'Sentry'))
       }}
-    name: Add sentry label
+    name: Add Sentry Label
     runs-on: ubuntu-latest
     steps:
       - uses: actions-ecosystem/action-add-labels@v1
@@ -38,7 +36,7 @@ jobs:
             kind/bug
             kind/sentry
   add-area-labels:
-    name: Add area label
+    name: Add Area Label
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -54,11 +52,11 @@ jobs:
         with:
           labels: ${{ matrix.area }}
   add-to-project:
-    name: Add issue to project
+    name: Add Issue to Project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/add-to-project@v0.5.0
         with:
           project-url: >
             https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
-          github-token: ${{ secrets.token }}
+          github-token: ${{ github.token }}

@@ -1,5 +1,5 @@
 ---
-name: Project PR automation
+name: Project PR
 
 # yamllint disable-line rule:truthy
 on:
@@ -8,34 +8,33 @@ on:
       project-id:
         required: true
         type: number
-    secrets:
-      token:
-        required: true
 
 concurrency:
   group: project-pr-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  repository-projects: write
-  issues: write
-  statuses: write
-
 jobs:
   add-to-project:
     name: Add pull request to project
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      repository-projects: write
+      issues: write
+      statuses: write
     if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
     steps:
       - uses: actions/add-to-project@v0.5.0
         with:
           project-url: >
             https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
-          github-token: ${{ secrets.token }}
+          github-token: ${{ github.token }}
   get-reviews:
     runs-on: ubuntu-latest
     name: Get reviews
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       pending: ${{ steps.reviews.outputs.pending }}
       approved: ${{ steps.reviews.outputs.approved }}
@@ -44,10 +43,13 @@ jobs:
       - id: reviews
         uses: jrylan/github-action-reviews-counter@main
         with:
-          repo-token: ${{ secrets.token }}
+          repo-token: ${{ github.token }}
   get-linked-issues:
     runs-on: ubuntu-latest
     name: Get linked issues
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       issues: ${{ steps.linked-issues.outputs.issues }}
     steps:
@@ -56,7 +58,7 @@ jobs:
         id: linked-issues
         uses: kin/gh-action-get-linked-issues@v2.0
         with:
-          access-token: ${{ secrets.token }}
+          access-token: ${{ github.token }}
       - run: echo ${{ steps.linked-issues.outputs.issues }}
   move-tasks-to-todo:
     runs-on: ubuntu-latest
@@ -68,6 +70,11 @@ jobs:
       }}
     needs:
       - get-linked-issues
+    permissions:
+      contents: read
+      repository-projects: write
+      issues: write
+      statuses: write
     name: Move cards to "Todo"
     strategy:
       matrix:
@@ -75,7 +82,7 @@ jobs:
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
-          gh_token: ${{ secrets.token }}
+          gh_token: ${{ github.token }}
           organization: ${{ github.repository_owner }}
           project_id: ${{ inputs.project-id }}
           resource_node_id: ${{ matrix.data.issue.node_id }}
@@ -92,6 +99,11 @@ jobs:
     needs:
       - get-linked-issues
       - get-reviews
+    permissions:
+      contents: read
+      repository-projects: write
+      issues: write
+      statuses: write
     name: Move cards to "In Progress"
     strategy:
       matrix:
@@ -99,7 +111,7 @@ jobs:
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
-          gh_token: ${{ secrets.token }}
+          gh_token: ${{ github.token }}
           organization: ${{ github.repository_owner }}
           project_id: ${{ inputs.project-id }}
           resource_node_id: ${{ matrix.data.issue.node_id }}
@@ -113,6 +125,11 @@ jobs:
         github.event_name == 'pull_request' &&
         needs.get-reviews.outputs.changes-requested == 0
       }}
+    permissions:
+      contents: read
+      repository-projects: write
+      issues: write
+      statuses: write
     needs:
       - get-linked-issues
       - get-reviews
@@ -123,7 +140,7 @@ jobs:
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
-          gh_token: ${{ secrets.token }}
+          gh_token: ${{ github.token }}
           organization: ${{ github.repository_owner }}
           project_id: ${{ inputs.project-id }}
           resource_node_id: ${{ matrix.data.issue.node_id }}

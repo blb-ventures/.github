@@ -1,5 +1,5 @@
 ---
-name: Test back
+name: Test Backend
 
 # yamllint disable-line rule:truthy
 on:
@@ -16,7 +16,7 @@ on:
         default: --cov=api
       need-geolibs:
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   # yamllint disable-line rule:line-length

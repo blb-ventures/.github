@@ -23,8 +23,6 @@ on:
       deployment-projects:
         type: string
     secrets:
-      token:
-        required: true
       sentry-url:
         required: true
       sentry-org:
@@ -35,20 +33,19 @@ on:
 concurrency:
   group: release
 
-permissions:
-  contents: write
-  pull-requests: write
-  deployments: write
-
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
     steps:
       - uses: google-github-actions/release-please-action@v3
         id: release
         with:
-          token: ${{ secrets.token }}
+          token: ${{ github.token }}
           release-type: ${{ inputs.package-release-type}}
           package-name: ${{ inputs.package-name }}
           extra-files: ${{ inputs.package-extra-files }}
@@ -70,7 +67,7 @@ jobs:
         name: Create GitHub deployment
         if: ${{ steps.release.outputs.release_created }}
         with:
-          token: ${{ secrets.token }}
+          token: ${{ github.token }}
           environment-url: ${{ inputs.deployment-url }}
           ref: ${{ github.sha }}
           initial-status: success
