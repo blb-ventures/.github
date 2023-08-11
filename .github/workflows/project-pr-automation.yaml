@@ -8,6 +8,9 @@ on:
       project-id:
         required: true
         type: number
+    secrets:
+      gh-token:
+        required: true
 
 concurrency:
   group: project-pr-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -17,18 +20,13 @@ jobs:
   add-to-project:
     name: Add pull request to project
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      repository-projects: write
-      issues: write
-      statuses: write
     if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/add-to-project@v0.5.0
         with:
           project-url: >
             https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
-          github-token: ${{ github.token }}
+          github-token: ${{ secrets.gh-token }}
   get-reviews:
     runs-on: ubuntu-latest
     name: Get reviews
@@ -71,11 +69,6 @@ jobs:
     needs:
       - get-linked-issues
       - add-to-project
-    permissions:
-      contents: read
-      repository-projects: write
-      issues: write
-      statuses: write
     name: Move cards to "Todo"
     strategy:
       matrix:
@@ -83,7 +76,7 @@ jobs:
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
-          gh_token: ${{ github.token }}
+          gh_token: ${{ secrets.gh-token }}
           organization: ${{ github.repository_owner }}
           project_id: ${{ inputs.project-id }}
           resource_node_id: ${{ matrix.data.issue.node_id }}
@@ -101,11 +94,6 @@ jobs:
       - get-linked-issues
       - get-reviews
       - add-to-project
-    permissions:
-      contents: read
-      repository-projects: write
-      issues: write
-      statuses: write
     name: Move cards to "In Progress"
     strategy:
       matrix:
@@ -113,7 +101,7 @@ jobs:
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
-          gh_token: ${{ github.token }}
+          gh_token: ${{ secrets.gh-token }}
           organization: ${{ github.repository_owner }}
           project_id: ${{ inputs.project-id }}
           resource_node_id: ${{ matrix.data.issue.node_id }}
@@ -127,11 +115,6 @@ jobs:
         github.event_name == 'pull_request' &&
         needs.get-reviews.outputs.changes-requested == 0
       }}
-    permissions:
-      contents: read
-      repository-projects: write
-      issues: write
-      statuses: write
     needs:
       - get-linked-issues
       - get-reviews
@@ -143,7 +126,7 @@ jobs:
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
-          gh_token: ${{ github.token }}
+          gh_token: ${{ secrets.gh-token }}
           organization: ${{ github.repository_owner }}
           project_id: ${{ inputs.project-id }}
           resource_node_id: ${{ matrix.data.issue.node_id }}

@@ -8,16 +8,13 @@ on:
       project-id:
         required: true
         type: number
+    secrets:
+      gh-token:
+        required: true
 
 concurrency:
   group: project-issue-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-
-permissions:
-  contents: read
-  repository-projects: write
-  issues: write
-  statuses: write
 
 jobs:
   add-sentry-label:
@@ -27,6 +24,9 @@ jobs:
         (contains(github.event.issue.performed_via_github_app.name, 'sentry') ||
          contains(github.event.issue.performed_via_github_app.name, 'Sentry'))
       }}
+    permissions:
+      contents: read
+      issues: write
     name: Add Sentry Label
     runs-on: ubuntu-latest
     steps:
@@ -46,6 +46,9 @@ jobs:
           - area/backend
           - area/devops
           - area/design
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions-ecosystem/action-add-labels@v1.1.0
         if: ${{ contains(github.event.body, matrix.area) }}
@@ -59,4 +62,4 @@ jobs:
         with:
           project-url: >
             https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
-          github-token: ${{ github.token }}
+          github-token: ${{ secrets.gh-token }}
