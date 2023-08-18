@@ -31,6 +31,10 @@ on:
       argocd-app:
         type: string
     secrets:
+      s3-access-token:
+        required: false
+      s3-secret-key:
+        required: false
       sentry-url:
         required: true
       sentry-org:
@@ -145,6 +149,8 @@ jobs:
           build-args: |
             SENTRY_RELEASE=${{ env.RELEASE_NAME }}
             SENTRY_TOKEN=${{ secrets.sentry-token }}
+            S3_ACCESS_KEY=${{ secrets.s3-access-token || '' }}
+            S3_SECRET_KEY=${{ secrets.s3-secret-key || '' }}
           tags: |
             ${{ inputs.docker-registry }}/${{ inputs.web-image }}:${{ env.RELEASE_NAME }}
             ${{ inputs.docker-registry }}/${{ inputs.web-image }}:latest
