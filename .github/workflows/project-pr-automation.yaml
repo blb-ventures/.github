@@ -41,7 +41,7 @@ jobs:
       - id: reviews
         uses: jrylan/github-action-reviews-counter@main
         with:
-          repo-token: ${{ github.token }}
+          repo-token: ${{ secrets.gh-token }}
   get-linked-issues:
     runs-on: ubuntu-latest
     name: Get linked issues
@@ -56,7 +56,7 @@ jobs:
         id: linked-issues
         uses: kin/gh-action-get-linked-issues@v2.0
         with:
-          access-token: ${{ github.token }}
+          access-token: ${{ secrets.gh-token }}
       - run: echo ${{ steps.linked-issues.outputs.issues }}
   move-tasks-to-todo:
     runs-on: ubuntu-latest
