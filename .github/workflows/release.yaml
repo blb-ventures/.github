@@ -74,7 +74,7 @@ jobs:
           ref: ${{ github.sha }}
           initial-status: success
           environment: ${{ inputs.deployment-environment }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create sentry release
         if: ${{ steps.release.outputs.release_created }}
         uses: getsentry/action-release@v1

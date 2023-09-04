@@ -34,7 +34,7 @@ jobs:
     outputs:
       has-changes: ${{ steps.check.outputs.changed }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 100
       - uses: marceloprado/has-changed-path@v1.0.1
@@ -58,7 +58,7 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install system deps
         if: ${{ inputs.need-geolibs }}
         run: sudo apt-get install gdal-bin libsqlite3-mod-spatialite

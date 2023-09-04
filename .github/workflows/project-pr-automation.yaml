@@ -51,7 +51,7 @@ jobs:
     outputs:
       issues: ${{ steps.linked-issues.outputs.issues }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Get Linked Issues Action
         id: linked-issues
         uses: kin/gh-action-get-linked-issues@v2.0
