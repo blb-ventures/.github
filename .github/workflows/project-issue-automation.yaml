@@ -19,11 +19,9 @@ concurrency:
 jobs:
   add-sentry-label:
     if: >
-      ${{
-        github.event.issue.performed_via_github_app != null &&
-        (contains(github.event.issue.performed_via_github_app.name, 'sentry') ||
-         contains(github.event.issue.performed_via_github_app.name, 'Sentry'))
-      }}
+      github.event.issue.performed_via_github_app != null &&
+      (contains(github.event.issue.performed_via_github_app.name, 'sentry') ||
+       contains(github.event.issue.performed_via_github_app.name, 'Sentry'))
     permissions:
       contents: read
       issues: write
