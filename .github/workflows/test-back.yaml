@@ -85,9 +85,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Check for ruff errors
-        run: poetry run ruff .
-      - name: Check for black errors
-        run: poetry run black . --check
+        run: poetry run ruff check .
+      - name: Check for ruff format errors
+        run: poetry run ruff format --check .
       - name: Check for pyright errors
         uses: jakebailey/pyright-action@v1
         with:
