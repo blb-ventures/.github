@@ -20,7 +20,7 @@ jobs:
   add-to-project:
     name: Add pull request to project
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/add-to-project@v0.5.0
         with:
@@ -29,6 +29,7 @@ jobs:
           github-token: ${{ secrets.gh-token }}
   get-reviews:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     name: Get reviews
     permissions:
       contents: read
@@ -44,6 +45,7 @@ jobs:
           repo-token: ${{ secrets.gh-token }}
   get-linked-issues:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     name: Get linked issues
     permissions:
       contents: read
