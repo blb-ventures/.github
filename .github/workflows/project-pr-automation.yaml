@@ -40,9 +40,9 @@ jobs:
       changes-requested: ${{ steps.reviews.outputs.changes_requested }}
     steps:
       - id: reviews
-        uses: jrylan/github-action-reviews-counter@main
+        uses: github-actions-tools/gh-reviews-count@v0.0.2
         with:
-          repo-token: ${{ secrets.gh-token }}
+          github-token: ${{ secrets.gh-token }}
   get-linked-issues:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
