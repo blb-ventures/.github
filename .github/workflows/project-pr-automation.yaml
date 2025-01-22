@@ -27,22 +27,6 @@ jobs:
           project-url: >
             https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
           github-token: ${{ secrets.gh-token }}
-  get-reviews:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    name: Get reviews
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      pending: ${{ steps.reviews.outputs.pending }}
-      approved: ${{ steps.reviews.outputs.approved }}
-      changes-requested: ${{ steps.reviews.outputs.changes_requested }}
-    steps:
-      - id: reviews
-        uses: github-actions-tools/gh-reviews-count@v0.0.2
-        with:
-          github-token: ${{ secrets.gh-token }}
   get-linked-issues:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
@@ -85,12 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
-      (github.event.pull_request.draft ||
-       (github.event_name == 'pull_request' &&
-        needs.get-reviews.outputs.changes-requested > 0))
+      (github.event.pull_request.draft || github.event_name == 'pull_request')
     needs:
       - get-linked-issues
-      - get-reviews
       - add-to-project
     name: Move cards to "In Progress"
     strategy:
@@ -109,11 +90,9 @@ jobs:
     if: >
       fromJson(needs.get-linked-issues.outputs.issues)[0] != null &&
       !github.event.pull_request.draft &&
-      github.event_name == 'pull_request' &&
-      needs.get-reviews.outputs.changes-requested == 0
+      github.event_name == 'pull_request'
     needs:
       - get-linked-issues
-      - get-reviews
       - add-to-project
     name: Move cards to "Review"
     strategy:
