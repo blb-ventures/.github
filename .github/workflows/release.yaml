@@ -47,7 +47,7 @@ jobs:
       - uses: google-github-actions/release-please-action@v3
         id: release
         with:
-          token: ${{ secrets.GH-TOKEN }}
+          token: ${{ secrets.gh-token }}
           release-type: ${{ inputs.package-release-type}}
           package-name: ${{ inputs.package-name }}
           extra-files: ${{ inputs.package-extra-files }}
