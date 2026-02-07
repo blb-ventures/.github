@@ -5,15 +5,15 @@ name: Release
 on:
   workflow_call:
     inputs:
-      package-name:
-        type: string
-        required: true
       package-release-type:
         type: string
         default: simple
-      package-extra-files:
+      config-file:
         type: string
-        default: ''
+        default: .release-please-config.json
+      manifest-file:
+        type: string
+        default: .release-please-manifest.json
       deployment-url:
         type: string
         required: true
@@ -44,28 +44,14 @@ jobs:
       pull-requests: write
       deployments: write
     steps:
-      - uses: google-github-actions/release-please-action@v3
+      - uses: google-github-actions/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.gh-token }}
-          release-type: ${{ inputs.package-release-type}}
-          package-name: ${{ inputs.package-name }}
-          extra-files: ${{ inputs.package-extra-files }}
-          changelog-types: >
-            [{"type":"feat","section":"Features","hidden":false},
-             {"type":"BREAKING CHANGE","section":"Breaking Changes","hidden":false},
-             {"type":"fix","section":"Bug Fixes","hidden":false},
-             {"type":"perf","section":"Performance","hidden":false},
-             {"type":"deps","section":"Dependencies","hidden":false},
-             {"type":"revert","section":"Reverts","hidden":false},
-             {"type":"docs","section":"Documentation","hidden":false},
-             {"type":"style","section":"Styles","hidden":false},
-             {"type":"refactor","section":"Code Refactoring","hidden":false},
-             {"type":"test","section":"Tests","hidden":false},
-             {"type":"build","section":"Build System","hidden":false},
-             {"type":"ci","section":"Continuous Integration","hidden":false},
-             {"type":"chore","section":"Miscellaneous","hidden":false}]
-      - uses: chrnorm/deployment-action@releases/v2
+          release-type: ${{ inputs.package-release-type }}
+          config-file: ${{ inputs.config-file }}
+          manifest-file: ${{ inputs.manifest-file }}
+      - uses: chrnorm/deployment-action@v2
         name: Create GitHub deployment
         if: ${{ steps.release.outputs.release_created }}
         with:
@@ -74,10 +60,10 @@ jobs:
           ref: ${{ github.sha }}
           initial-status: success
           environment: ${{ inputs.deployment-environment }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Create sentry release
         if: ${{ steps.release.outputs.release_created }}
-        uses: getsentry/action-release@v1
+        uses: getsentry/action-release@v3
         env:
           SENTRY_URL: ${{ secrets.sentry-url }}
           SENTRY_ORG: ${{ secrets.sentry-org }}

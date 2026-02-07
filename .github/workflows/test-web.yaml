@@ -17,6 +17,9 @@ on:
       core-lint:
         type: boolean
         default: true
+      package-manager:
+        type: string
+        default: yarn
 
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -29,7 +32,7 @@ jobs:
     outputs:
       has-changes: ${{ steps.check.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 100
       - uses: marceloprado/has-changed-path@v1.0.1
@@ -46,33 +49,28 @@ jobs:
         shell: bash
         working-directory: ./${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        if: ${{ inputs.package-manager == 'pnpm' }}
+        uses: pnpm/action-setup@v4
+
       - id: setup-node
         name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
-          cache: yarn
-          cache-dependency-path: '**/yarn.lock'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
-      - name: Yarn cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.yarn-cache-dir-path.outputs.dir }}
-            "**/node_modules"
+          cache: ${{ inputs.package-manager }}
           # yamllint disable-line rule:line-length
-          key: node-modules-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-${{ hashFiles('**/yarn.lock')
-            }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-
-            node-modules-${{ runner.os }}-
-      - name: Yarn install
-        run: yarn install --immutable
+          cache-dependency-path: ${{ inputs.package-manager == 'yarn' && '**/yarn.lock' || '**/pnpm-lock.yaml' }}
+
+      - name: Install dependencies
+        # yamllint disable-line rule:line-length
+        run: ${{ inputs.package-manager == 'yarn' && 'yarn install --immutable' || 'pnpm install --frozen-lockfile' }}
+
       - name: Core lint
         if: ${{ inputs.core-lint }}
-        run: yarn core-lint
+        run: ${{ inputs.package-manager }} core-lint
+
       - name: Web lint
-        run: yarn web-lint
+        run: ${{ inputs.package-manager }} web-lint
