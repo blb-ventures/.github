@@ -5,9 +5,6 @@ name: Release
 on:
   workflow_call:
     inputs:
-      package-release-type:
-        type: string
-        default: simple
       config-file:
         type: string
         default: .release-please-config.json
@@ -44,11 +41,10 @@ jobs:
       pull-requests: write
       deployments: write
     steps:
-      - uses: google-github-actions/release-please-action@v4
+      - uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.gh-token }}
-          release-type: ${{ inputs.package-release-type }}
           config-file: ${{ inputs.config-file }}
           manifest-file: ${{ inputs.manifest-file }}
       - uses: chrnorm/deployment-action@v2
