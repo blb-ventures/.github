@@ -61,7 +61,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: version
         run: echo "version=v$(cat version.txt)" >> "$GITHUB_OUTPUT"
   generate-deployment:
@@ -74,7 +74,7 @@ jobs:
       pull-requests: read
       deployments: write
     steps:
-      - uses: chrnorm/deployment-action@releases/v2
+      - uses: chrnorm/deployment-action@v2
         name: Create GitHub deployment
         id: deployment
         with:
@@ -93,7 +93,7 @@ jobs:
     env:
       RELEASE_NAME: ${{ needs.get-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker registry
@@ -104,7 +104,7 @@ jobs:
           password: ${{ secrets.docker-password }}
       - name: Build and push
         id: build-and-push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.back-context }}
           pull: true
@@ -130,7 +130,7 @@ jobs:
       RELEASE_NAME: ${{ needs.get-version.outputs.version }}
       SENTRY_TOKEN: ${{ secrets.sentry-token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker registry
@@ -141,7 +141,7 @@ jobs:
           password: ${{ secrets.docker-password }}
       - name: Build and push
         id: build-and-push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.web-context }}
           pull: true
@@ -197,17 +197,17 @@ jobs:
       pull-requests: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Update deployment status (success)
         if: ${{ needs.pre-release.result == 'success' }}
-        uses: chrnorm/deployment-status@releases/v2
+        uses: chrnorm/deployment-status@v2
         with:
           token: ${{ github.token }}
           state: success
           deployment-id: ${{ needs.generate-deployment.outputs.deployment_id }}
       - name: Create sentry release
         if: ${{ needs.pre-release.result == 'success' && inputs.deployment-projects }}
-        uses: getsentry/action-release@v1
+        uses: getsentry/action-release@v3
         env:
           RELEASE_NAME: ${{ needs.get-version.outputs.version }}
           SENTRY_URL: ${{ secrets.sentry-url }}
@@ -219,7 +219,7 @@ jobs:
           projects: ${{ inputs.deployment-projects }}
       - name: Update deployment status (failure)
         if: ${{ needs.pre-release.result != 'success' }}
-        uses: chrnorm/deployment-status@releases/v2
+        uses: chrnorm/deployment-status@v2
         with:
           token: ${{ github.token }}
           state: failure

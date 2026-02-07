@@ -13,18 +13,20 @@ on:
         default: backend
       python-version:
         type: string
-        default: '3.11'
+        default: '3.13'
       pytest-extra-args:
         type: string
         default: --cov=api
       need-geolibs:
         type: boolean
         default: true
+      package-manager:
+        type: string
+        default: poetry
 
 concurrency:
   # yamllint disable-line rule:line-length
-  group: tests-${{ github.workflow }}-${{ inputs.working-directory }}-${{ github.head_ref || github.run_id
-    }}
+  group: tests-${{ github.workflow }}-${{ inputs.working-directory }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -34,7 +36,7 @@ jobs:
     outputs:
       has-changes: ${{ steps.check.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 100
       - uses: marceloprado/has-changed-path@v1.0.1
@@ -50,6 +52,9 @@ jobs:
       run:
         shell: bash
         working-directory: ./${{ inputs.working-directory }}
+    env:
+      # yamllint disable-line rule:line-length
+      RUN_PREFIX: ${{ inputs.package-manager == 'poetry' && 'poetry run' || 'uv run' }}
     services:
       redis:
         image: redis
@@ -58,22 +63,30 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
       - name: Install system deps
         if: ${{ inputs.need-geolibs }}
         run: sudo apt-get update && sudo apt-get install gdal-bin libsqlite3-mod-spatialite
+
+      # --- poetry path ---
       - name: Set up Python
+        if: ${{ inputs.package-manager == 'poetry' }}
         id: setup-python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.python-version }}
+
       - name: Install poetry
+        if: ${{ inputs.package-manager == 'poetry' }}
         run: |
           pipx install poetry
           poetry config virtualenvs.create true
           poetry config virtualenvs.in-project true
+
       - name: Load cached venv
-        uses: actions/cache@v3
+        if: ${{ inputs.package-manager == 'poetry' }}
+        uses: actions/cache@v5
         with:
           path: ${{ inputs.working-directory }}/.venv
           # yamllint disable-line rule:line-length
@@ -82,23 +95,43 @@ jobs:
           restore-keys: |
             back-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
             back-venv-${{ runner.os }}-
-      - name: Install dependencies
+
+      - name: Install dependencies (poetry)
+        if: ${{ inputs.package-manager == 'poetry' }}
         run: poetry install
+
+      # --- uv path ---
+      - name: Set up uv
+        if: ${{ inputs.package-manager == 'uv' }}
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          enable-cache: true
+
+      - name: Install dependencies (uv)
+        if: ${{ inputs.package-manager == 'uv' }}
+        run: uv sync --locked
+
+      # --- shared steps ---
       - name: Check for ruff errors
-        run: poetry run ruff check .
+        run: $RUN_PREFIX ruff check .
+
       - name: Check for ruff format errors
-        run: poetry run ruff format --check .
+        run: $RUN_PREFIX ruff format --check .
+
       - name: Check for pyright errors
-        uses: jakebailey/pyright-action@v1
+        uses: jakebailey/pyright-action@v2
         with:
           working-directory: ${{ inputs.working-directory }}
+
       - name: Run Tests
         env:
           PYTEST_ARGS: ${{ inputs.pytest-extra-args }}
         # yamllint disable-line rule:line-length
-        run: poetry run pytest --junitxml=pytest.xml "${PYTEST_ARGS}" . | tee pytest-coverage.txt
+        run: $RUN_PREFIX pytest --junitxml=pytest.xml "${PYTEST_ARGS}" . | tee pytest-coverage.txt
+
       - name: Pytest coverage comment
-        uses: MishaKav/pytest-coverage-comment@main
+        uses: MishaKav/pytest-coverage-comment@v1
         if: ${{ github.actor != 'dependabot[bot]' }}
         continue-on-error: true
         with:
