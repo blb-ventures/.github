@@ -30,6 +30,9 @@ on:
         default: frontend
       argocd-app:
         type: string
+      manifest-file:
+        type: string
+        default: .release-please-manifest.json
     secrets:
       s3-access-token:
         required: false
@@ -63,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - id: version
-        run: echo "version=v$(cat version.txt)" >> "$GITHUB_OUTPUT"
+        run: echo "version=v$(jq -r 'to_entries[0].value' ${{ inputs.manifest-file }})" >> "$GITHUB_OUTPUT"
   generate-deployment:
     name: Generate Release Deployment
     runs-on: ubuntu-latest
