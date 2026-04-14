@@ -17,6 +17,22 @@ on:
       core-lint:
         type: boolean
         default: true
+      run-tests:
+        description: Run `<package-manager> test` after lint.
+        type: boolean
+        default: false
+      test-command:
+        description: >-
+          Override the test script invocation. If empty, defaults to
+          `<package-manager> test` when run-tests is true.
+        type: string
+        default: ''
+      coverage-path:
+        description: >-
+          Comma- or newline-separated paths (relative to working-directory) to
+          upload as a coverage artifact after tests run. Leave empty to skip.
+        type: string
+        default: ''
       package-manager:
         type: string
         default: yarn
@@ -79,3 +95,17 @@ jobs:
 
       - name: Web lint
         run: ${{ inputs.package-manager }} web-lint
+
+      - name: Run tests
+        if: ${{ inputs.run-tests }}
+        # yamllint disable-line rule:line-length
+        run: ${{ inputs.test-command != '' && inputs.test-command || format('{0} test', inputs.package-manager) }}
+
+      - name: Upload coverage
+        if: ${{ inputs.run-tests && inputs.coverage-path != '' && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: ${{ inputs.coverage-path }}
+          retention-days: 14
+          if-no-files-found: ignore
