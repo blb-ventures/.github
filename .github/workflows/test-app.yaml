@@ -32,7 +32,7 @@ jobs:
     outputs:
       has-changes: ${{ steps.check.outputs.changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 100
       - uses: marceloprado/has-changed-path@v1.0.1
@@ -49,7 +49,7 @@ jobs:
         shell: bash
         working-directory: ./${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pnpm
         if: ${{ inputs.package-manager == 'pnpm' }}
@@ -57,7 +57,7 @@ jobs:
 
       - id: setup-node
         name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
           cache: ${{ inputs.package-manager }}
