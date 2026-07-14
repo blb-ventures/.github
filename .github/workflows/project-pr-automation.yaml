@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/add-to-project@v1.0.2
+      - uses: actions/add-to-project@v2.0.0
         with:
           project-url: >
             https://github.com/orgs/${{ github.repository_owner }}/projects/${{ inputs.project-id }}
@@ -37,7 +37,7 @@ jobs:
     outputs:
       issues: ${{ steps.linked-issues.outputs.issues }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Get Linked Issues Action
         id: linked-issues
         uses: kin/gh-action-get-linked-issues@v2.0

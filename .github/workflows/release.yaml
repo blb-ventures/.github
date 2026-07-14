@@ -41,7 +41,7 @@ jobs:
       pull-requests: write
       deployments: write
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ secrets.gh-token }}
@@ -56,7 +56,7 @@ jobs:
           ref: ${{ github.sha }}
           initial-status: success
           environment: ${{ inputs.deployment-environment }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Create sentry release
         if: ${{ steps.release.outputs.release_created }}
         uses: getsentry/action-release@v3
