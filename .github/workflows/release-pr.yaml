@@ -132,6 +132,7 @@ jobs:
     env:
       RELEASE_NAME: ${{ needs.get-version.outputs.version }}
       SENTRY_TOKEN: ${{ secrets.sentry-token }}
+      CACHE_REF: ${{ inputs.docker-registry }}/${{ inputs.web-image }}:buildcache
     steps:
       - uses: actions/checkout@v7
       - name: Set up Docker Buildx
@@ -154,12 +155,14 @@ jobs:
             SENTRY_TOKEN=${{ secrets.sentry-token }}
             S3_ACCESS_KEY=${{ secrets.s3-access-token || '' }}
             S3_SECRET_KEY=${{ secrets.s3-secret-key || '' }}
+          secrets: |
+            sentry_token=${{ secrets.sentry-token }}
           tags: |
             ${{ inputs.docker-registry }}/${{ inputs.web-image }}:${{ env.RELEASE_NAME }}
             ${{ inputs.docker-registry }}/${{ inputs.web-image }}:latest
-          # FIXME: Use registry cache when we can
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ env.CACHE_REF }}
+          cache-to: |
+            type=registry,ref=${{ env.CACHE_REF }},mode=max,image-manifest=true,oci-mediatypes=true
   pre-release:
     name: Pre Release
     runs-on: ubuntu-latest
